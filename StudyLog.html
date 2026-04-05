@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="StudyLog">
+<title>StudyLog</title>
+<style>
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f0;
+    --bg-tertiary: #eeede8;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --border: rgba(0,0,0,0.12);
+    --border-strong: rgba(0,0,0,0.22);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --accent: #2563eb;
+    --green: #1a8c1a;
+    --red: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1c1c1e;
+      --bg-secondary: #2c2c2e;
+      --bg-tertiary: #000000;
+      --text-primary: #f2f2f7;
+      --text-secondary: #8e8e93;
+      --border: rgba(255,255,255,0.12);
+      --border-strong: rgba(255,255,255,0.22);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; color: var(--text-primary); background: var(--bg-tertiary); min-height: 100vh; }
+
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* Header */
+  .app-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 14px; background: var(--bg-secondary); border-bottom: 0.5px solid var(--border); position: sticky; top: 0; z-index: 10; }
+  .app-header h1 { font-size: 18px; font-weight: 600; }
+  .settings-icon-btn { width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--bg-primary); border: 0.5px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
+  /* Tab bar */
+  .tab-bar { display: flex; background: var(--bg-secondary); border-bottom: 0.5px solid var(--border); padding: 0 8px; position: sticky; top: 57px; z-index: 10; }
+  .tab { flex: 1; padding: 12px 4px; font-size: 12px; font-weight: 500; text-align: center; cursor: pointer; background: none; color: var(--text-secondary); border: none; border-bottom: 2px solid transparent; margin-bottom: -0.5px; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Content */
+  .content { padding: 16px; flex: 1; }
+
+  /* Card */
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; }
+
+  /* Subject row */
+  .subject-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .subject-row label { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+  .subject-select { flex: 1; font-size: 14px; padding: 8px 12px; border: 0.5px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 24px; justify-content: center; align-items: center; margin-bottom: 20px; }
+  .btn-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .btn-stop, .btn-start { width: 120px; height: 120px; border-radius: 50%; border: none; cursor: pointer; font-size: 19px; font-weight: 700; color: #fff; letter-spacing: 1px; position: relative; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; user-select: none; }
+  .btn-start { background: radial-gradient(circle at 38% 32%, #7dda7d, #2ca52c); box-shadow: 0 5px 0 #1a6e1a, inset 0 2px 6px rgba(255,255,255,0.35); }
+  .btn-stop  { background: radial-gradient(circle at 38% 32%, #f08080, #d43030); box-shadow: 0 5px 0 #8b1a1a, inset 0 2px 6px rgba(255,255,255,0.35); }
+  .btn-start:active { transform: translateY(3px); box-shadow: 0 2px 0 #1a6e1a, inset 0 2px 6px rgba(255,255,255,0.35); }
+  .btn-stop:active  { transform: translateY(3px); box-shadow: 0 2px 0 #8b1a1a, inset 0 2px 6px rgba(255,255,255,0.35); }
+
+  .running-indicator { display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 13px; color: var(--green); margin-bottom: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 12px 14px; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-value { font-size: 20px; font-weight: 500; }
+
+  /* Section title */
+  .section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; }
+
+  /* Timeline */
+  .time-grid { display: grid; grid-template-columns: 44px 1fr; }
+  .time-col { display: flex; flex-direction: column; }
+  .time-slot { height: 36px; display: flex; align-items: flex-start; padding-top: 2px; font-size: 11px; color: var(--text-secondary); justify-content: flex-end; padding-right: 8px; }
+  .events-col { position: relative; border-left: 0.5px solid var(--border); }
+  .hour-line { height: 36px; border-bottom: 0.5px solid var(--border); }
+  .event-block { position: absolute; left: 3px; right: 3px; border-radius: 4px; padding: 3px 6px; font-size: 11px; font-weight: 500; color: #fff; overflow: hidden; cursor: pointer; }
+
+  /* Sessions */
+  .sessions-list { display: flex; flex-direction: column; gap: 6px; }
+  .session-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 0.5px solid var(--border); border-radius: var(--radius-md); cursor: pointer; }
+  .session-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .session-text { flex: 1; }
+  .session-time { font-size: 13px; }
+  .session-subject { font-size: 12px; color: var(--text-secondary); }
+  .session-dur { font-size: 13px; font-weight: 500; }
+  .edit-btn { font-size: 12px; color: var(--text-secondary); background: none; border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 3px 8px; cursor: pointer; }
+
+  /* Week */
+  .week-bar-wrap { display: flex; gap: 6px; align-items: flex-end; height: 120px; margin-bottom: 8px; }
+  .week-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .week-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; }
+  .week-bar-label { font-size: 11px; color: var(--text-secondary); }
+  .week-bar-time { font-size: 10px; color: var(--text-secondary); }
+
+  /* Calendar */
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-title { font-size: 15px; font-weight: 600; }
+  .cal-nav { display: flex; gap: 4px; }
+  .cal-nav button { background: none; border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 4px 12px; cursor: pointer; font-size: 14px; color: var(--text-primary); }
+  .cal-dow { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; margin-bottom: 6px; }
+  .cal-dow span { font-size: 12px; color: var(--text-secondary); padding: 4px 0; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .cal-cell { border-radius: var(--radius-md); padding: 4px 3px 6px; min-height: 60px; cursor: pointer; border: 0.5px solid transparent; }
+  .cal-cell:active { background: var(--bg-secondary); }
+  .cal-cell.other-month .cal-day-num { opacity: 0.35; }
+  .cal-cell.selected { border: 1.5px solid var(--accent); }
+  .cal-day-num { font-size: 13px; font-weight: 500; text-align: center; margin-bottom: 4px; line-height: 22px; }
+  .cal-day-num.today-circle { background: var(--accent); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; margin: 0 auto 4px; }
+  .cal-bar { height: 4px; border-radius: 2px; margin-top: 3px; }
+  .cal-time-label { font-size: 10px; color: var(--text-secondary); text-align: center; margin-top: 2px; }
+  .cal-dot-row { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; margin-top: 2px; }
+  .cal-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  /* Settings panel */
+  .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 300; display: flex; justify-content: flex-end; }
+  .settings-panel { width: 320px; max-width: 100vw; height: 100%; background: var(--bg-primary); border-left: 0.5px solid var(--border); overflow-y: auto; padding: 20px 16px; }
+  .settings-panel h2 { font-size: 16px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .settings-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-secondary); line-height: 1; }
+  .settings-section { margin-bottom: 24px; }
+  .settings-section h3 { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+  .subject-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 10px 12px; border: 0.5px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); }
+  .subject-item input[type=text] { flex: 1; font-size: 13px; padding: 4px 8px; border: 0.5px solid var(--border); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); }
+  .del-btn { font-size: 16px; color: var(--text-secondary); background: none; border: none; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .add-btn { font-size: 13px; color: var(--green); background: none; border: 0.5px dashed var(--green); border-radius: var(--radius-md); padding: 8px 14px; cursor: pointer; width: 100%; margin-top: 4px; }
+  .color-swatch-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; flex-shrink: 0; }
+  .backup-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .backup-btn { flex: 1; font-size: 12px; padding: 8px 6px; border-radius: var(--radius-md); cursor: pointer; border: 0.5px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); }
+  .backup-btn.wide { width: 100%; margin-bottom: 8px; }
+  .backup-list { display: flex; flex-direction: column; gap: 6px; }
+  .backup-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0.5px solid var(--border); border-radius: var(--radius-md); }
+  .backup-item-info { flex: 1; }
+  .backup-item-date { font-size: 11px; color: var(--text-secondary); }
+  .backup-item-count { font-size: 12px; }
+  .restore-btn { font-size: 11px; padding: 4px 10px; border-radius: var(--radius-md); border: 0.5px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; }
+  .notice { font-size: 12px; margin-top: 8px; min-height: 18px; }
+  .notice.ok { color: var(--green); }
+  .notice.err { color: var(--red); }
+
+  /* Color popover */
+  .color-popover { position: fixed; z-index: 400; background: var(--bg-primary); border: 0.5px solid var(--border-strong); border-radius: var(--radius-lg); padding: 12px; width: 224px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+  .preset-grid { display: grid; grid-template-columns: repeat(8,1fr); gap: 6px; margin-bottom: 10px; }
+  .preset-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  .preset-dot.selected { border-color: var(--text-primary); }
+  .custom-color-row { display: flex; align-items: center; gap: 8px; }
+  .custom-color-row label { font-size: 12px; color: var(--text-secondary); }
+  .custom-color-row input[type=color] { width: 36px; height: 28px; border: 0.5px solid var(--border); border-radius: 4px; cursor: pointer; padding: 1px; background: none; }
+  .custom-color-row input[type=text] { flex: 1; font-size: 12px; padding: 4px 8px; border: 0.5px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); }
+  .popover-close-btn { display: block; width: 100%; margin-top: 10px; font-size: 12px; padding: 7px; border: 0.5px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); cursor: pointer; }
+
+  /* Modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 500; padding: 20px; }
+  .modal { background: var(--bg-primary); border-radius: var(--radius-lg); padding: 20px; width: 100%; max-width: 320px; border: 0.5px solid var(--border); }
+  .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .modal label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+  .modal input, .modal select { width: 100%; font-size: 16px; padding: 10px 12px; border: 0.5px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text-primary); margin-bottom: 14px; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .modal-btns button { font-size: 14px; padding: 8px 16px; border-radius: var(--radius-md); cursor: pointer; border: 0.5px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); }
+  .modal-btns .primary { background: var(--green); border-color: var(--green); color: #fff; }
+  .modal-btns .danger { background: var(--red); border-color: var(--red); color: #fff; }
+
+  .empty-msg { font-size: 13px; color: var(--text-secondary); text-align: center; padding: 16px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-header">
+    <h1>StudyLog</h1>
+    <button class="settings-icon-btn" onclick="openSettings()">⚙</button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('timer')">タイマー</button>
+    <button class="tab" onclick="showTab('day')">日</button>
+    <button class="tab" onclick="showTab('week')">週</button>
+    <button class="tab" onclick="showTab('cal')">カレンダー</button>
+  </div>
+
+  <div class="content">
+
+    <!-- TIMER -->
+    <div id="tab-timer">
+      <div class="card">
+        <div class="subject-row">
+          <label>科目</label>
+          <select class="subject-select" id="subject-select"></select>
+        </div>
+        <div id="running-ind" style="display:none" class="running-indicator">
+          <div class="dot"></div><span id="running-subject"></span>を勉強中
+        </div>
+        <div class="btn-row">
+          <div class="btn-wrap">
+            <div class="btn-start" id="btn-start">START</div>
+          </div>
+          <div class="btn-wrap">
+            <div class="btn-stop" id="btn-stop">STOP</div>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">本日の合計</div><div class="stat-value" id="today-total">0:00</div></div>
+          <div class="stat-card"><div class="stat-label">現在のセッション</div><div class="stat-value" id="session-elapsed">-</div></div>
+          <div class="stat-card"><div class="stat-label">最新の開始</div><div class="stat-value" id="last-start">-</div></div>
+          <div class="stat-card"><div class="stat-label">最新の終了</div><div class="stat-value" id="last-end">-</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY -->
+    <div id="tab-day" style="display:none">
+      <div class="card">
+        <div class="section-title">本日のタイムライン</div>
+        <div class="time-grid"><div class="time-col" id="time-col"></div><div class="events-col" id="events-col"></div></div>
+      </div>
+      <div class="card">
+        <div class="section-title">セッション一覧（タップで編集）</div>
+        <div class="sessions-list" id="sessions-list"></div>
+      </div>
+    </div>
+
+    <!-- WEEK -->
+    <div id="tab-week" style="display:none">
+      <div class="card">
+        <div class="section-title">今週の勉強時間（日〜土）</div>
+        <div class="week-bar-wrap" id="week-bars"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-secondary);">
+          <span>週合計</span><span id="week-total" style="font-weight:500;color:var(--text-primary);">-</span>
+        </div>
+      </div>
+      <div class="card"><div class="section-title">科目別内訳</div><div id="subject-breakdown"></div></div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div id="tab-cal" style="display:none">
+      <div class="card">
+        <div class="cal-header">
+          <div class="cal-title" id="cal-title"></div>
+          <div class="cal-nav">
+            <button onclick="calMove(-1)">▲</button>
+            <button onclick="calMove(1)">▼</button>
+          </div>
+        </div>
+        <div class="cal-dow">
+          <span style="color:#e74c3c">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span style="color:#3498db">土</span>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="card" id="cal-detail" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:14px;font-weight:600" id="cal-detail-date"></div>
+          <div style="font-size:13px;color:var(--text-secondary)" id="cal-detail-total"></div>
+        </div>
+        <div class="sessions-list" id="cal-sessions-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Settings panel -->
+<div id="settings-overlay" style="display:none" class="settings-overlay" onclick="closeSettingsIfBg(event)">
+  <div class="settings-panel">
+    <h2>設定 <button class="settings-close" onclick="closeSettings()">✕</button></h2>
+    <div class="settings-section">
+      <h3>科目（最大10個）</h3>
+      <div id="subject-list"></div>
+      <button class="add-btn" id="add-subject-btn" onclick="addSubject()">＋ 科目を追加</button>
+    </div>
+    <div class="settings-section">
+      <h3>バックアップ・復元</h3>
+      <div class="backup-row">
+        <button class="backup-btn" onclick="createBackup()">💾 今すぐ保存</button>
+        <button class="backup-btn" onclick="exportJSON()">📤 JSON書き出し</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(this)">
+      <button class="backup-btn wide" onclick="document.getElementById('import-file').click()">📥 JSONから復元</button>
+      <div class="section-title" style="margin-top:4px">自動バックアップ（直近5件）</div>
+      <div class="backup-list" id="backup-list"></div>
+      <p class="notice" id="backup-notice"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Color popover -->
+<div id="color-popover" class="color-popover" style="display:none">
+  <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">カラーを選択</div>
+  <div class="preset-grid" id="preset-grid"></div>
+  <div class="custom-color-row">
+    <label>カスタム</label>
+    <input type="color" id="custom-color-picker">
+    <input type="text" id="custom-color-hex" maxlength="7" placeholder="#ffffff">
+  </div>
+  <button class="popover-close-btn" onclick="closeColorPopover()">完了</button>
+</div>
+
+<!-- Edit modal -->
+<div id="modal" style="display:none">
+  <div class="modal-bg" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>セッションを編集</h3>
+      <label>科目</label><select id="edit-subject"></select>
+      <label>開始時刻</label><input type="time" id="edit-start">
+      <label>終了時刻</label><input type="time" id="edit-end">
+      <div class="modal-btns">
+        <button class="danger" onclick="deleteSession()">削除</button>
+        <button onclick="closeModal()">キャンセル</button>
+        <button class="primary" onclick="saveSession()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRESETS=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59b6','#e91e63','#ff5722','#795548','#607d8b','#00bcd4','#8bc34a','#ff9800','#673ab7','#f06292','#26a69a','#42a5f5','#ec407a','#66bb6a','#ffa726','#ab47bc','#29b6f6','#d4e157'];
+const DAYS=['日','月','火','水','木','金','土'];
+const DC=['#3498db','#2ecc71','#e67e22','#e74c3c','#9b59b6','#1abc9c','#f1c40f','#e91e63','#00bcd4','#795548'];
+const SK='sl_sub',DK='sl_ses',BK='sl_bak';
+
+let subjects=JSON.parse(localStorage.getItem(SK)||'null')||[{name:'数学',color:'#3498db'},{name:'英語',color:'#2ecc71'},{name:'理科',color:'#e67e22'}];
+let sessions=JSON.parse(localStorage.getItem(DK)||'[]');
+let backups=JSON.parse(localStorage.getItem(BK)||'[]');
+let running=null,editIdx=-1,elapsed=0,ticker,colorPopoverTarget=-1;
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calSelected=null;
+
+function save(){localStorage.setItem(SK,JSON.stringify(subjects));localStorage.setItem(DK,JSON.stringify(sessions));}
+function saveBackups(){localStorage.setItem(BK,JSON.stringify(backups));}
+
+/* Backup */
+function createBackup(silent){
+  backups.unshift({ts:Date.now(),subjects:JSON.parse(JSON.stringify(subjects)),sessions:JSON.parse(JSON.stringify(sessions))});
+  if(backups.length>5)backups=backups.slice(0,5);saveBackups();
+  if(!silent){showNotice('バックアップ保存 ✓',true);renderBackupList();}
+}
+function restoreBackup(i){if(!confirm('このバックアップで復元しますか？'))return;subjects=backups[i].subjects;sessions=backups[i].sessions;save();updateSubjectSelect();renderBackupList();showNotice('復元しました ✓',true);}
+function renderBackupList(){
+  const el=document.getElementById('backup-list');
+  if(!backups.length){el.innerHTML='<p style="font-size:12px;color:var(--text-secondary)">バックアップなし</p>';return;}
+  el.innerHTML=backups.map((b,i)=>{const d=new Date(b.ts);return `<div class="backup-item"><div class="backup-item-info"><div class="backup-item-count">${b.sessions.length}件・${b.subjects.length}科目</div><div class="backup-item-date">${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}</div></div><button class="restore-btn" onclick="restoreBackup(${i})">復元</button></div>`;}).join('');
+}
+function showNotice(msg,ok){const el=document.getElementById('backup-notice');el.textContent=msg;el.className='notice '+(ok?'ok':'err');setTimeout(()=>{el.textContent='';},3000);}
+function exportJSON(){const blob=new Blob([JSON.stringify({exported:new Date().toISOString(),subjects,sessions},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`studylog_${new Date().toISOString().slice(0,10)}.json`;a.click();}
+function importJSON(input){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!d.sessions||!d.subjects)throw 0;createBackup(true);subjects=d.subjects;sessions=d.sessions;save();updateSubjectSelect();renderBackupList();showNotice(`復元完了：${sessions.length}件`,true);}catch{showNotice('ファイル形式エラー',false);}};r.readAsText(file);input.value='';}
+
+/* Helpers */
+function fmt(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60),h=Math.floor(m/60);return h>0?`${h}:${String(m%60).padStart(2,'0')}`:`${m}:${String(s%60).padStart(2,'0')}`;}
+function fmtHM(ms){const m=Math.floor(ms/60000),h=Math.floor(m/60);return h>0?`${h}時間${m%60}分`:`${m}分`;}
+function timeFmt(ts){const d=new Date(ts);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function sessionsForDay(y,mo,d){const s=new Date(y,mo,d).getTime(),e=s+86400000;return sessions.filter(x=>x.start>=s&&x.start<e);}
+function totalForDay(y,mo,d){return sessionsForDay(y,mo,d).reduce((a,s)=>a+(s.end-s.start),0);}
+function todaySessions(){const n=new Date();return sessionsForDay(n.getFullYear(),n.getMonth(),n.getDate());}
+function todayTotal(){return todaySessions().reduce((a,s)=>a+(s.end-s.start),0);}
+
+/* Subject select */
+function updateSubjectSelect(){const sel=document.getElementById('subject-select');const v=sel.value;sel.innerHTML=subjects.map((s,i)=>`<option value="${i}">${s.name}</option>`).join('');if(v&&v<subjects.length)sel.value=v;}
+
+/* Settings */
+function openSettings(){document.getElementById('settings-overlay').style.display='flex';renderSettingsSubjects();renderBackupList();}
+function closeSettings(){document.getElementById('settings-overlay').style.display='none';}
+function closeSettingsIfBg(e){if(e.target===document.getElementById('settings-overlay'))closeSettings();}
+
+/* Color popover */
+function openColorPopover(idx,btn){
+  colorPopoverTarget=idx;const cur=subjects[idx].color;
+  document.getElementById('preset-grid').innerHTML=PRESETS.map(c=>`<div class="preset-dot${c===cur?' selected':''}" style="background:${c}" onclick="selectPresetColor('${c}')"></div>`).join('');
+  const cp=document.getElementById('custom-color-picker'),ch=document.getElementById('custom-color-hex');
+  cp.value=cur;ch.value=cur;
+  cp.oninput=()=>{ch.value=cp.value;applyCustomColor(cp.value);};
+  ch.oninput=()=>{if(/^#[0-9a-fA-F]{6}$/.test(ch.value)){cp.value=ch.value;applyCustomColor(ch.value);}};
+  const pop=document.getElementById('color-popover');pop.style.display='';
+  const r=btn.getBoundingClientRect();let top=r.bottom+6,left=r.left-80;
+  if(left<8)left=8;if(top+240>window.innerHeight)top=r.top-240;
+  pop.style.top=top+'px';pop.style.left=left+'px';
+}
+function selectPresetColor(c){subjects[colorPopoverTarget].color=c;save();renderSettingsSubjects();updateSubjectSelect();document.getElementById('custom-color-picker').value=c;document.getElementById('custom-color-hex').value=c;document.querySelectorAll('.preset-dot').forEach(d=>d.classList.toggle('selected',d.style.background===c||d.style.backgroundColor===c));}
+function applyCustomColor(c){subjects[colorPopoverTarget].color=c;save();renderSettingsSubjects();updateSubjectSelect();document.querySelectorAll('.preset-dot').forEach(d=>d.classList.remove('selected'));}
+function closeColorPopover(){document.getElementById('color-popover').style.display='none';}
+document.addEventListener('click',e=>{const pop=document.getElementById('color-popover');if(pop.style.display!=='none'&&!pop.contains(e.target)&&!e.target.classList.contains('color-swatch-btn'))closeColorPopover();});
+
+/* Settings subjects */
+function renderSettingsSubjects(){
+  document.getElementById('subject-list').innerHTML=subjects.map((s,i)=>`<div class="subject-item"><button class="color-swatch-btn" style="background:${s.color}" onclick="openColorPopover(${i},this)"></button><input type="text" value="${s.name}" oninput="subjects[${i}].name=this.value;save();updateSubjectSelect()"><button class="del-btn" onclick="removeSubject(${i})">✕</button></div>`).join('');
+  document.getElementById('add-subject-btn').style.display=subjects.length>=10?'none':'';
+}
+function addSubject(){if(subjects.length>=10)return;subjects.push({name:'新しい科目',color:DC[subjects.length%DC.length]});save();renderSettingsSubjects();updateSubjectSelect();}
+function removeSubject(i){if(subjects.length<=1)return;subjects.splice(i,1);save();renderSettingsSubjects();updateSubjectSelect();}
+
+/* Timer */
+function startStudy(){
+  if(running)return;
+  const idx=+document.getElementById('subject-select').value;
+  running={start:Date.now(),subjectIdx:idx};
+  document.getElementById('running-ind').style.display='flex';
+  document.getElementById('running-subject').textContent=subjects[idx].name;
+  document.getElementById('last-start').textContent=timeFmt(running.start);
+  document.getElementById('last-end').textContent='-';
+  document.getElementById('btn-start').style.opacity='0.45';
+  clearInterval(ticker);
+  ticker=setInterval(()=>{elapsed=Date.now()-running.start;document.getElementById('session-elapsed').textContent=fmt(elapsed);document.getElementById('today-total').textContent=fmt(todayTotal()+elapsed);},1000);
+}
+function stopStudy(){
+  if(!running)return;clearInterval(ticker);
+  const end=Date.now();sessions.push({start:running.start,end,subjectIdx:running.subjectIdx});
+  save();createBackup(true);
+  document.getElementById('last-end').textContent=timeFmt(end);
+  document.getElementById('running-ind').style.display='none';
+  document.getElementById('btn-start').style.opacity='';
+  document.getElementById('session-elapsed').textContent='-';
+  document.getElementById('today-total').textContent=fmt(todayTotal());
+  running=null;elapsed=0;
+}
+document.getElementById('btn-start').addEventListener('click',startStudy);
+document.getElementById('btn-stop').addEventListener('click',stopStudy);
+
+/* Day */
+function renderDay(){
+  const tc=document.getElementById('time-col'),ec=document.getElementById('events-col');
+  tc.innerHTML=Array.from({length:24},(_,h)=>`<div class="time-slot">${h}:00</div>`).join('');
+  ec.innerHTML=Array.from({length:24},()=>`<div class="hour-line"></div>`).join('');
+  const d=new Date();d.setHours(0,0,0,0);
+  const dayMs=d.getTime(),pxPerMs=(36*24)/86400000;
+  todaySessions().forEach(s=>{
+    const top=(s.start-dayMs)*pxPerMs,h=Math.max((s.end-s.start)*pxPerMs,18);
+    const subj=subjects[s.subjectIdx]||{name:'?',color:'#888'};
+    const div=document.createElement('div');
+    div.className='event-block';div.style.cssText=`top:${top}px;height:${h}px;background:${subj.color}`;
+    div.textContent=h>30?`${timeFmt(s.start)} ${subj.name}`:h>18?subj.name:'';
+    div.onclick=()=>openEdit(sessions.indexOf(s));ec.appendChild(div);
+  });
+  const ts=todaySessions(),sl=document.getElementById('sessions-list');
+  if(!ts.length){sl.innerHTML='<p class="empty-msg">セッションなし</p>';return;}
+  sl.innerHTML=ts.map(s=>{const subj=subjects[s.subjectIdx]||{name:'?',color:'#888'};return `<div class="session-item" onclick="openEdit(${sessions.indexOf(s)})"><div class="session-dot" style="background:${subj.color}"></div><div class="session-text"><div class="session-time">${timeFmt(s.start)} 〜 ${timeFmt(s.end)}</div><div class="session-subject">${subj.name}</div></div><div class="session-dur">${fmtHM(s.end-s.start)}</div><button class="edit-btn">編集</button></div>`;}).join('');
+}
+
+/* Week */
+function renderWeek(){
+  const now=new Date(),day=now.getDay();
+  const ws=new Date(now);ws.setDate(now.getDate()-day);ws.setHours(0,0,0,0);
+  const days=Array.from({length:7},(_,i)=>{const d=new Date(ws);d.setDate(ws.getDate()+i);return d;});
+  const dt=days.map(d=>{const s=d.getTime(),e=s+86400000;return sessions.filter(x=>x.start>=s&&x.start<e).reduce((a,x)=>a+(x.end-x.start),0);});
+  const maxMs=Math.max(...dt,1);
+  document.getElementById('week-bars').innerHTML=days.map((d,i)=>{const h=Math.round((dt[i]/maxMs)*90),today=i===day;return `<div class="week-bar-col"><div class="week-bar-time">${dt[i]>0?fmtHM(dt[i]):''}</div><div class="week-bar" style="height:${h}px;background:${today?'#1a8c1a33':'#2563eb33'};border:1.5px solid ${today?'#1a8c1a':'#2563eb'}"></div><div class="week-bar-label" style="font-weight:${today?'600':'400'}">${DAYS[i]}</div></div>`;}).join('');
+  const wt=dt.reduce((a,b)=>a+b,0);document.getElementById('week-total').textContent=fmtHM(wt);
+  const bd={},wMs=ws.getTime(),wEnd=wMs+7*86400000;
+  sessions.filter(s=>s.start>=wMs&&s.start<wEnd).forEach(s=>{bd[s.subjectIdx]=(bd[s.subjectIdx]||0)+(s.end-s.start);});
+  const bdEl=document.getElementById('subject-breakdown');
+  if(!Object.keys(bd).length){bdEl.innerHTML='<p class="empty-msg">データなし</p>';return;}
+  bdEl.innerHTML=Object.entries(bd).sort((a,b)=>b[1]-a[1]).map(([idx,ms])=>{const subj=subjects[+idx]||{name:'?',color:'#888'},pct=Math.round(ms/wt*100);return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${subj.color}"></span>${subj.name}</span><span style="color:var(--text-secondary)">${fmtHM(ms)} (${pct}%)</span></div><div style="height:6px;border-radius:3px;background:var(--bg-secondary)"><div style="height:6px;border-radius:3px;width:${pct}%;background:${subj.color}"></div></div></div>`;}).join('');
+}
+
+/* Calendar */
+function calMove(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+function renderCal(){
+  document.getElementById('cal-title').textContent=`${calYear}年${calMonth+1}月`;
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const daysInPrev=new Date(calYear,calMonth,0).getDate();
+  const today=new Date(),ty=today.getFullYear(),tm=today.getMonth(),td=today.getDate();
+  let maxDay=1;for(let d=1;d<=daysInMonth;d++){const t=totalForDay(calYear,calMonth,d);if(t>maxDay)maxDay=t;}
+  const cells=[];
+  for(let i=firstDay-1;i>=0;i--)cells.push({d:daysInPrev-i,cur:false,y:calMonth===0?calYear-1:calYear,mo:calMonth===0?11:calMonth-1});
+  for(let d=1;d<=daysInMonth;d++)cells.push({d,cur:true,y:calYear,mo:calMonth});
+  const rem=42-cells.length;for(let d=1;d<=rem;d++)cells.push({d,cur:false,y:calMonth===11?calYear+1:calYear,mo:calMonth===11?0:calMonth+1});
+  document.getElementById('cal-grid').innerHTML=cells.map((c,i)=>{
+    const isToday=c.cur&&c.y===ty&&c.mo===tm&&c.d===td;
+    const isSel=calSelected&&c.cur&&c.y===calSelected.y&&c.mo===calSelected.mo&&c.d===calSelected.d;
+    const total=c.cur?totalForDay(c.y,c.mo,c.d):0;
+    const ss=c.cur?sessionsForDay(c.y,c.mo,c.d):[];
+    const seen={};ss.forEach(s=>{seen[s.subjectIdx]=true;});
+    const dots=Object.keys(seen).slice(0,3).map(idx=>`<div class="cal-dot" style="background:${(subjects[+idx]||{color:'#888'}).color}"></div>`).join('');
+    const barW=total>0?Math.max(Math.round((total/maxDay)*100),10):0;
+    const barColor=ss.length>0?(subjects[ss[0].subjectIdx]||{color:'#3498db'}).color:'transparent';
+    const isSun=i%7===0,isSat=i%7===6;
+    const numStyle=isToday?'':'color:'+(isSun?'#e74c3c':isSat?'#3498db':'var(--text-primary)');
+    const numHtml=isToday?`<div class="cal-day-num today-circle">${c.d}</div>`:`<div class="cal-day-num" style="${numStyle}">${c.d}</div>`;
+    return `<div class="cal-cell${!c.cur?' other-month':''}${isSel?' selected':''}" onclick="selectCalDay(${c.y},${c.mo},${c.d},${c.cur})">${numHtml}${total>0?`<div class="cal-bar" style="background:${barColor}44;border:1px solid ${barColor};width:${barW}%"></div><div class="cal-time-label">${fmtHM(total)}</div>`:''}<div class="cal-dot-row">${dots}</div></div>`;
+  }).join('');
+}
+function selectCalDay(y,mo,d,cur){
+  if(!cur){calYear=y;calMonth=mo;renderCal();return;}
+  calSelected={y,mo,d};renderCal();
+  const ss=sessionsForDay(y,mo,d),det=document.getElementById('cal-detail');
+  const dObj=new Date(y,mo,d);
+  document.getElementById('cal-detail-date').textContent=`${y}年${mo+1}月${d}日（${DAYS[dObj.getDay()]}）`;
+  const total=ss.reduce((a,s)=>a+(s.end-s.start),0);
+  document.getElementById('cal-detail-total').textContent=total>0?`合計 ${fmtHM(total)}`:'記録なし';
+  document.getElementById('cal-sessions-list').innerHTML=!ss.length?'<p class="empty-msg">この日の記録なし</p>':ss.map(s=>{const subj=subjects[s.subjectIdx]||{name:'?',color:'#888'};return `<div class="session-item" onclick="openEdit(${sessions.indexOf(s)})"><div class="session-dot" style="background:${subj.color}"></div><div class="session-text"><div class="session-time">${timeFmt(s.start)} 〜 ${timeFmt(s.end)}</div><div class="session-subject">${subj.name}</div></div><div class="session-dur">${fmtHM(s.end-s.start)}</div><button class="edit-btn">編集</button></div>`;}).join('');
+  det.style.display='';
+}
+
+/* Edit modal */
+function openEdit(idx){editIdx=idx;const s=sessions[idx];document.getElementById('edit-subject').innerHTML=subjects.map((su,i)=>`<option value="${i}"${i===s.subjectIdx?' selected':''}>${su.name}</option>`).join('');const toT=ts=>{const d=new Date(ts);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};document.getElementById('edit-start').value=toT(s.start);document.getElementById('edit-end').value=toT(s.end);document.getElementById('modal').style.display='';}
+function closeModal(){document.getElementById('modal').style.display='none';}
+function saveSession(){const s=sessions[editIdx],base=new Date(s.start);base.setHours(0,0,0,0);const[sh,sm]=document.getElementById('edit-start').value.split(':');const[eh,em]=document.getElementById('edit-end').value.split(':');sessions[editIdx].start=base.getTime()+(+sh*3600+(+sm)*60)*1000;sessions[editIdx].end=base.getTime()+(+eh*3600+(+em)*60)*1000;sessions[editIdx].subjectIdx=+document.getElementById('edit-subject').value;save();closeModal();renderDay();renderCal();}
+function deleteSession(){sessions.splice(editIdx,1);save();closeModal();renderDay();renderCal();}
+
+/* Tab */
+function showTab(tab){
+  ['timer','day','week','cal'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===tab?'':'none';});
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['timer','day','week','cal'][i]===tab));
+  closeColorPopover();
+  if(tab==='day')renderDay();if(tab==='week')renderWeek();if(tab==='cal')renderCal();
+}
+
+/* Init */
+document.getElementById('today-total').textContent=fmt(todayTotal());
+updateSubjectSelect();
+</script>
+</body>
+</html>
